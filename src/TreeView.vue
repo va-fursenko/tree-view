@@ -92,7 +92,7 @@
      */
     let newNode = () => {
         return {
-                  id: -1 * (Math.floor(Math.random() * (999999 - 100000)) + 100000),
+                  id: -(Math.floor(Math.random() * 899999) + 100000),
                 name: 'New item',
             children: []
         }
