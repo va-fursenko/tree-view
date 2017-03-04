@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tree view</title>
+    <link rel="stylesheet" href="./assets/css/lib.css">
+</head>
+<body>
+    <div id="root-container">
+        Выберите категорию товаров: &nbsp;
+        <p>
+            <tree-view
+                :nodes="categories"
+                :nodes-url="nodesLoadUrl"
+                :readonly="false"
+                v-model="selectedId"
+            ></tree-view>
+        </p>
+
+        <p>Выбранный ID: {{ selectedId }}</p>
+    </div>
+
+    <!-- JS scripts -->
+    <script type="text/javascript" src="./assets/js/lib.js"></script>
+    <script type="text/javascript" src="./assets/js/app.js"></script>
+</body>
+</html>

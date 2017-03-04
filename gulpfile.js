@@ -1,78 +1,60 @@
 process.env.DISABLE_NOTIFIER = true;
 
-var elixir = require('laravel-elixir');
+let elixir = require('laravel-elixir');
 
 require("laravel-elixir-webpack-official");
 require('laravel-elixir-vue');
+require('laravel-elixir-remove');
 
 elixir.config.sourcemaps = true;
 
-var
-    // Source assets root path
-    assetsPath = 'resources/assets/',
-    // Compiled & published assets root path
-    assetsPublicPath = 'public/',
-    // Libs root path
-    bowerPath = './vendor/bower_components/';
+let
+    npmPath = './node_modules',
+    srcPath = './src',
+    examplePath = './example',
+    assetsPath = examplePath + '/assets';
 
 /**
- * Run elixir!
+ * Run elixir
  */
 elixir(function(mix) {
 
-    // Copy all static files to public static directory
-    mix.copy(
-        [
-            assetsPath + 'static/**'
-        ],
-        assetsPublicPath + 'static'
-    );
+    // Clear assets path
+    //mix.remove(assetsPath);
 
-    // Pack CSS to app.css
-    mix.styles(
-        [
-            bowerPath + 'bootstrap/dist/css/bootstrap.css',
-            bowerPath + 'font-awesome/css/font-awesome.css'
-        ],
-        assetsPublicPath + 'css/app.css'
-    );
+    // Pack component
 
-    // Pack custom CSS to lib.css
-    mix.styles(
+    // Pack component to js file
+    mix.webpack(
         [
-            assetsPath + 'css/**'
+            srcPath + '/**/**/*.js',
+            srcPath + '/**/**/*.vue',
+            examplePath + '/example.js',
         ],
-        assetsPublicPath + 'css/lib.css'
-    );
-
-    // Copy all fonts to public fonts directory
-    mix.copy(
-        [
-            // Twitter Bootstrap
-            bowerPath + 'bootstrap/dist/fonts/**',
-            // Font awesome
-            bowerPath + 'font-awesome/fonts/**'
-        ],
-        assetsPublicPath + 'fonts'
+        assetsPath + '/js/app.js'
     );
 
     // Pack specified libs to lib.js
     mix.scripts(
         [
-            bowerPath + 'jquery/dist/jquery.js',
-            bowerPath + 'bootstrap/dist/js/bootstrap.js',
-            // Vue.js
-            bowerPath + 'vue/dist/vue.js'
+            npmPath + '/vue/dist/vue.js'
         ],
-        assetsPublicPath + 'js/lib.js'
+        assetsPath + '/js/lib.js'
     );
 
-    // Pack all js files to ES6 app.js
-    mix.webpack(
+    // Pack CSS to lib.css
+    mix.styles(
         [
-            assetsPath + 'js/**/**/*.js',
-            assetsPath + 'js/**/**/*.vue'
+            npmPath + '/font-awesome/css/font-awesome.css',
         ],
-        assetsPublicPath + 'js/app.js'
+        assetsPath + '/css/lib.css'
+    );
+
+    // Copy fonts
+    mix.copy(
+        [
+            npmPath + '/font-awesome/fonts/**'
+        ],
+        assetsPath + '/fonts'
     );
 });

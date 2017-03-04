@@ -83,7 +83,7 @@
 </template>
 
 <script lang="babel">
-    import { Http } from '../common/http';
+    import { Http } from './common/http';
 
     /**
      * New empty node model
