@@ -6,12 +6,18 @@
     <link rel="stylesheet" href="./assets/css/lib.css">
 </head>
 <body>
+    <style>
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+    </style>
+
     <div id="root-container">
         Выберите категорию товаров: &nbsp;
         <p>
             <tree-view
                 :nodes="categories"
-                :nodes-url="nodesLoadUrl"
+                :nodes-url="nodesUrl"
                 :readonly="false"
                 v-model="selectedId"
             ></tree-view>

@@ -9,15 +9,15 @@
                 title="Add root node"
             > </i>
 
-            <div
-                is="tree-view"
+            <tree-view
                 v-for="node in nodes"
+                :key="node.id"
                 :node="node"
                 :nodes-url="nodesUrl"
                 :allow-empty="allowEmpty"
                 :readonly="readonly"
                 v-model="value"
-            ></div>
+            > </tree-view>
         </template>
 
         <template v-else-if="isNode">
@@ -66,16 +66,16 @@
             </div>
 
             <div v-show="isOpen" v-if="hasChildren">
-                <div
-                    is="tree-view"
+                <tree-view
                     v-for="child in node.children"
+                    :key="node.id"
                     :node="child"
                     :nodes-url="nodesUrl"
                     :allow-empty="allowEmpty"
                     :readonly="readonly"
                     v-model="value"
                     ref="children"
-                ></div>
+                > </tree-view>
             </div>
         </template>
 
@@ -152,7 +152,7 @@
                 // Inner properties
                 isOpen: false,
                 isLoading: null,
-                isEdit: false
+                isEditing: false
             }
         },
 
@@ -164,7 +164,11 @@
              * @return {Boolean}
              */
             isSelected () {
-                return this.isNode && this.value == this.node.id;
+                let result = this.isNode && this.value == this.node.id;
+                if (!result) {
+                    this.isEditing = false;
+                }
+                return result;
             },
 
             /**
@@ -193,15 +197,12 @@
             childrenExists () {
                 // Bad model
                 if (!this.node) {
-
                     return false;
                 }
                 // Child nodes has not loaded yet, but available
                 if (this.canLoadChildren) {
-
                     return true;
                 }
-
                 // Children nodes already or not
                 return this.hasChildren;
             },
@@ -231,27 +232,12 @@
             },
 
             /**
-             * Node edit flag
-             */
-            isEditing: {
-                set (value) {
-                    this.isEdit = value;
-                },
-                get () {
-                    if (!this.isSelected) {
-                        this.isEdit = false;
-                    }
-                    return this.isEdit;
-                }
-            },
-
-            /**
              * New, yet not saved node flag
              *
              * @return {Boolean}
              */
             isNew () {
-                return Number.isInteger(this.node.id) && this.node.id < 0;
+                return this.node && Number.isInteger(this.node.id) && this.node.id < 0;
             }
         },
 
@@ -304,15 +290,15 @@
             /**
              * Set value to this.node.id and call this method in parent component
              *
-             * @param {Number|Boolean|String} value
+             * @param {Number|Boolean|String} newValue
              */
-            updateValue (value = null) {
-                this.value = arguments.length || !this.node ? value : this.node.id;
+            updateValue (newValue = null) {
+                let result = arguments.length || !this.node ? newValue : this.node.id;
                 // If parent is TreeView node or root, set value to it
                 if (this.$parent && (this.$parent.isNode || this.$parent.isRoot) && typeof this.$parent.updateValue === 'function') {
-                    this.$parent.updateValue(this.value);
+                    this.$parent.updateValue(result);
                 }
-                this.$emit('input', this.value);
+                this.$emit('input', result);
             },
 
             /**
@@ -388,7 +374,7 @@
              */
             saveNode () {
                 if (typeof this.saveUrl != 'string' || this.saveUrl) {
-                    this.node.name = this.$refs['nameInput'].value;
+                    this.node.name = this.$refs.nameInput.value;
                     this.isEditing = false;
 
                     return true;
@@ -409,7 +395,7 @@
                         if (self.node.id < 0 && response.data.id) {
                             self.node.id = response.data.id;
                         }
-                        self.node.name = self.$refs['nameInput'].value;
+                        self.node.name = self.$refs.nameInput.value;
                         self.isLoading = false;
                         self.isEditing = false;
                     }
