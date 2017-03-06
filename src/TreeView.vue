@@ -265,9 +265,9 @@
                 if (!this.isOpen && this.canLoadChildren) {
                     this.isLoading = true;
                     let self = this;
-                    Http.ajaxAction(this.nodesUrl, {id: this.node.id}, (response) => {
+                    Http.ajaxAction(self.nodesUrl, {id: self.node.id}, (response) => {
                         self.setChildren(response.data.nodes);
-                        this.isLoading = false;
+                        self.isLoading = false;
                     });
                 }
                 // Don't close node if click was with force toggle parameter (Click on name, not chevron)
@@ -324,18 +324,16 @@
                     return false;
                 }
 
-                if (typeof this.saveUrl != 'string' || this.saveUrl) {
+                if (typeof this.deleteUrl == 'string' && this.deleteUrl) {
+                    this.isLoading = true;
+                    let self = this;
+                    Http.ajaxAction(self.deleteUrl, {id: self.node.id}, (response) => {
+                        self.$parent.deleteChildNode(self.node.id);
+                        self.isLoading = false;
+                    });
+                } else {
                     this.$parent.deleteChildNode(this.node.id);
-
-                    return true;
                 }
-
-                this.isLoading = true;
-                let self = this;
-                Http.ajaxAction(this.deleteUrl, {id: this.node.id}, (response) => {
-                    self.$parent.deleteChildNode(self.node.id);
-                    self.isLoading = false;
-                });
 
             },
 
@@ -374,33 +372,31 @@
              * Save node
              */
             saveNode () {
-                if (typeof this.saveUrl != 'string' || this.saveUrl) {
+                if (typeof this.saveUrl == 'string' && this.saveUrl) {
+                    this.isLoading = true;
+                    let self = this;
+                    Http.ajaxAction(
+                        self.saveUrl,
+                        {
+                            id: self.node.id,
+                            name: self.node.name,
+                            parent_id: self.isRoot || !self.$parent.node
+                                ? 0
+                                : self.$parent.node.id
+                        },
+                        (response) => {
+                            if (self.node.id < 0 && response.data.id) {
+                                self.node.id = response.data.id;
+                            }
+                            self.node.name = self.$refs.nameInput.value;
+                            self.isLoading = false;
+                            self.isEditing = false;
+                        }
+                    );
+                } else {
                     this.node.name = this.$refs.nameInput.value;
                     this.isEditing = false;
-
-                    return true;
                 }
-
-                this.isLoading = true;
-                let self = this;
-                Http.ajaxAction(
-                    this.saveUrl,
-                    {
-                        id: this.node.id,
-                        name: this.node.name,
-                        parent_id: this.isRoot || !this.$parent.node
-                            ? 0
-                            : this.$parent.node.id
-                    },
-                    (response) => {
-                        if (self.node.id < 0 && response.data.id) {
-                            self.node.id = response.data.id;
-                        }
-                        self.node.name = self.$refs.nameInput.value;
-                        self.isLoading = false;
-                        self.isEditing = false;
-                    }
-                );
             }
         },
 
