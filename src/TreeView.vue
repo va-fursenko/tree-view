@@ -16,7 +16,7 @@
                 :nodes-url="nodesUrl"
                 :allow-empty="allowEmpty"
                 :readonly="readonly"
-                v-model="value"
+                v-model="selectedId"
             > </tree-view>
         </template>
 
@@ -73,7 +73,7 @@
                     :nodes-url="nodesUrl"
                     :allow-empty="allowEmpty"
                     :readonly="readonly"
-                    v-model="value"
+                    v-model="selectedId"
                     ref="children"
                 > </tree-view>
             </div>
@@ -152,7 +152,8 @@
                 // Inner properties
                 isOpen: false,
                 isLoading: null,
-                isEditing: false
+                isEditing: false,
+                selectedId: this.value
             }
         },
 
@@ -164,7 +165,7 @@
              * @return {Boolean}
              */
             isSelected () {
-                let result = this.isNode && this.value == this.node.id;
+                let result = this.isNode && this.selectedId == this.node.id;
                 if (!result) {
                     this.isEditing = false;
                 }
@@ -293,12 +294,12 @@
              * @param {Number|Boolean|String} newValue
              */
             updateValue (newValue = null) {
-                let result = arguments.length || !this.node ? newValue : this.node.id;
+                this.selectedId = arguments.length || !this.node ? newValue : this.node.id;
                 // If parent is TreeView node or root, set value to it
                 if (this.$parent && (this.$parent.isNode || this.$parent.isRoot) && typeof this.$parent.updateValue === 'function') {
-                    this.$parent.updateValue(result);
+                    this.$parent.updateValue(this.selectedId);
                 }
-                this.$emit('input', result);
+                this.$emit('input', this.selectedId);
             },
 
             /**
@@ -403,6 +404,13 @@
             }
         },
 
+        // Fields watches
+        watch: {
+            value (newValue) {
+                this.selectedId = newValue;
+            }
+        },
+
         // Component create event handler
         created () {
 
@@ -450,7 +458,7 @@
 
     /* Selected tree view value */
     span.tree-view__node-name {
-        margin-left: 14px;
+        margin-left: 15px;
         cursor: pointer;
     }
     span.tree-view__node-name.tree-view__bold {
