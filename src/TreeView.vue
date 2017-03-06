@@ -450,9 +450,6 @@
 
     /* Selected tree view value */
     span.tree-view__node-name {
-        color: #555;
-        font-size: 14px;
-        text-decoration: none;
         margin-left: 14px;
         cursor: pointer;
     }
@@ -485,9 +482,6 @@
         display: inline;
         height: 26px;
         padding: 2px 6px;
-        font-family: inherit;
-        font-size: 14px;
-        color: #555;
         background-color: #fff;
         background-image: none;
         border: 1px solid #ccc;
@@ -497,5 +491,14 @@
         -webkit-transition: border-color ease-in-out .15s, -webkit-box-shadow ease-in-out .15s;
         -o-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
         transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+    }
+
+    /* Text style */
+    span.tree-view__node-name,
+    input.tree-view__name-edit-input {
+        color: #555;
+        font-size: 14px;
+        font-family: inherit;
+        text-decoration: none;
     }
 </style>
