@@ -14,17 +14,18 @@ try {
     die(json_encode(print_r($e, true), JSON_UNESCAPED_UNICODE));
 }
 
-$search = isset($_GET['search']) ? $_GET['search'] : '';
-$limit = 20;
+$data = json_decode($HTTP_RAW_POST_DATA, true);
+$id = isset($data['id']) ? $data['id'] : 0;
 
-if (!$search) {
-    $sql = "SELECT id, name, path_name AS pathName FROM product_categories WHERE deleted_at IS NULL AND ns_depth = 0 ORDER BY name LIMIT $limit";
-} else {
-    // My shit hosting hasen't mb_strtolower() function
-    //$search = $db->real_escape_string(mb_strtolower($search)) . '%';
-    $search = $db->real_escape_string($search) . '%';
-    $sql = "SELECT id, name, path_name AS pathName FROM product_categories WHERE deleted_at IS NULL AND LOWER(name) LIKE '$search' ORDER BY name LIMIT $limit";
-}
+$parent = $id ? "p.parent_id = " . intval($id) : "p.parent_id IS NULL";
+$sql =
+<<<SQL
+SELECT p.id, p.name, COUNT(c.id) AS children 
+FROM product_categories p LEFT JOIN product_categories c ON p.id = c.parent_id AND c.deleted_at IS NULL
+WHERE p.deleted_at IS NULL AND $parent
+GROUP BY p.id
+ORDER BY p.name
+SQL;
 
 function errorInfo($db) {
     $result = '';
@@ -49,5 +50,7 @@ $result = $result->fetch_all(MYSQLI_ASSOC);
 
 echo json_encode([
     'success' => true,
-    'data'    => $result,
+    'data'    => [
+        'nodes' => $result
+    ],
 ], JSON_UNESCAPED_UNICODE);

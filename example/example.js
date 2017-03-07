@@ -27,6 +27,6 @@ new Vue({
             {id: 2359, name: "Услуги", children: 1},
             {id: 2383, name: "Электроника", children: 1}
         ],
-        nodesUrl: "http://insbor.ru/vue/multi-select/product-categories.php?search="
+        nodesUrl: "http://insbor.ru/vue/tree-view/product-categories.php"
     }
 });

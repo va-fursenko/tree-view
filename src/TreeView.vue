@@ -226,8 +226,7 @@
              */
             canLoadChildren () {
                 return Boolean(
-                    this.node
-                    && Number.isInteger(this.node.children) && this.node.children > 0
+                    this.node && this.node.children && this.node.children > 0
                     && typeof this.nodesUrl == 'string' && this.nodesUrl
                 );
             },
