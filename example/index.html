@@ -17,9 +17,9 @@
         <p>
             <tree-view
                 :nodes="categories"
-                :nodes-url="nodesUrl"
                 :readonly="false"
                 v-model="selectedId"
+                nodes-url="/vue/tree-view/product-categories.php"
             ></tree-view>
         </p>
 

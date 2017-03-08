@@ -115,7 +115,6 @@
             },
             // Component value
             value: {
-                type: Number,
                 default: null,
                 twoWay: true
             },
@@ -305,13 +304,17 @@
              * Start new child node creation to selected
              */
             addChildNode () {
-                if (this.isNode && !this.node.children) {
-                    this.node.children = [];
+                if (this.isNode) {
+                    if (!Array.isArray(this.node.children)) {
+                        this.node.children = [];
+                    }
+                    this.node.children.push(newNode());
+                } else {
+                    if (!Array.isArray(this.nodes)) {
+                        this.nodes = [];
+                    }
+                    this.nodes.push(newNode());
                 }
-                let addChild = (nodes) => {
-                    nodes.push(newNode());
-                };
-                addChild(this.isNode ? this.node.children : this.nodes);
                 this.isOpen = true;
             },
 
