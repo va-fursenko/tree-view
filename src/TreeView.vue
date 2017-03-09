@@ -14,7 +14,6 @@
                 :key="node.id"
                 :node="node"
                 :nodes-url="nodesUrl"
-                :allow-empty="allowEmpty"
                 :readonly="readonly"
                 v-model="selectedId"
             > </tree-view>
@@ -71,7 +70,6 @@
                     :key="node.id"
                     :node="child"
                     :nodes-url="nodesUrl"
-                    :allow-empty="allowEmpty"
                     :readonly="readonly"
                     v-model="selectedId"
                     ref="children"
@@ -118,11 +116,6 @@
                 default: null,
                 twoWay: true
             },
-            // Flag, allows empty value
-            allowEmpty: {
-                type: Boolean,
-                default: false
-            },
             // Readonly flag
             readonly: {
                 type: Boolean,
@@ -165,7 +158,7 @@
              */
             isSelected () {
                 let result = this.isNode && this.selectedId == this.node.id;
-                if (!result) {
+                if (!result && this.isEditing) {
                     this.isEditing = false;
                 }
                 return result;
@@ -225,7 +218,7 @@
              */
             canLoadChildren () {
                 return Boolean(
-                    this.node && this.node.children && this.node.children > 0
+                    this.node && Number.isInteger(this.node.children) && this.node.children > 0
                     && typeof this.nodesUrl == 'string' && this.nodesUrl
                 );
             },
