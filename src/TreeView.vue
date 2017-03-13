@@ -218,7 +218,7 @@
              */
             canLoadChildren () {
                 return Boolean(
-                    this.node && Number.isInteger(this.node.children) && this.node.children > 0
+                    this.node && this.node.children > 0
                     && typeof this.nodesUrl == 'string' && this.nodesUrl
                 );
             },
@@ -229,7 +229,7 @@
              * @return {Boolean}
              */
             isNew () {
-                return this.node && Number.isInteger(this.node.id) && this.node.id < 0;
+                return this.node && this.node.id < 0;
             }
         },
 
@@ -418,7 +418,7 @@
         border-radius: 4px;
         box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
         padding: 4px 6px;
-        min-width: 480px;
+        min-width: 360px;
         display: block;
     }
 
