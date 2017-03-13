@@ -52,7 +52,5 @@ $result = $result->fetch_all(MYSQLI_ASSOC);
 
 echo json_encode([
     'success' => true,
-    'data'    => [
-        'nodes' => $result
-    ],
+    'data'    => $result,
 ], JSON_UNESCAPED_UNICODE);

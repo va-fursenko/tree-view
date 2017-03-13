@@ -152,6 +152,24 @@
         // Computed properties
         computed: {
             /**
+             * Possible component's custom events
+             *
+             * @return {Object}
+             */
+            events () {
+                return {
+                    NODES_BEFORE_LOAD: 'nodes-before-load',
+                    NODES_AFTER_LOAD: 'nodes-after-load',
+                    NODE_ADD: 'node-add',
+                    NODE_BEFORE_DELETE: 'node-before-delete',
+                    NODE_DELETE: 'node-delete',
+                    NODE_AFTER_DELETE: 'node-after-delete',
+                    NODE_BEFORE_SAVE: 'node-before-save',
+                    NODE_AFTER_SAVE: 'node-after-save'
+                };
+            },
+
+            /**
              * Check, whether component is selected
              *
              * @return {Boolean}
@@ -254,11 +272,13 @@
                 }
                 // If we open new, yet not loaded node and can use ajax callback to load it
                 if (!this.isOpen && this.canLoadChildren) {
+                    this.$emit(this.events.NODES_BEFORE_LOAD, self.node.id);
                     this.isLoading = true;
                     let self = this;
                     Http.ajaxAction(self.nodesUrl, {id: self.node.id}, (response) => {
-                        self.setChildren(response.data.nodes);
+                        self.setChildren(response.data);
                         self.isLoading = false;
+                        self.$emit(self.events.NODES_AFTER_LOAD, self.node.id, response.data);
                     });
                 }
                 // Don't close node if click was with force toggle parameter (Click on name, not chevron)
@@ -297,17 +317,19 @@
              * Start new child node creation to selected
              */
             addChildNode () {
+                let node = newNode();
                 if (this.isNode) {
                     if (!Array.isArray(this.node.children)) {
                         this.node.children = [];
                     }
-                    this.node.children.push(newNode());
+                    this.node.children.push(node);
                 } else {
                     if (!Array.isArray(this.nodes)) {
                         this.nodes = [];
                     }
-                    this.nodes.push(newNode());
+                    this.nodes.push(node);
                 }
+                this.$emit(this.events.NODE_ADD, node);
                 this.isOpen = true;
             },
 
@@ -318,6 +340,7 @@
                 if (!confirm("Really delete node and all it's children?") || !this.isNode) {
                     return false;
                 }
+                this.$emit(this.events.NODE_BEFORE_DELETE, this.node.id);
 
                 if (typeof this.deleteUrl == 'string' && this.deleteUrl) {
                     this.isLoading = true;
@@ -325,11 +348,11 @@
                     Http.ajaxAction(self.deleteUrl, {id: self.node.id}, (response) => {
                         self.$parent.deleteChildNode(self.node.id);
                         self.isLoading = false;
+                        self.$emit(self.events.NODE_AFTER_DELETE, self.node.id, response);
                     });
                 } else {
                     this.$parent.deleteChildNode(this.node.id);
                 }
-
             },
 
             /**
@@ -341,6 +364,7 @@
                 let spliceChild = (nodes, spliceId) => {
                     for (let i in nodes) {
                         if (nodes.hasOwnProperty(i) && spliceId == nodes[i].id) {
+                            this.$emit(this.events.NODE_DELETE, nodes[i]);
                             nodes.splice(i, 1);
                             return true;
                         }
@@ -351,7 +375,6 @@
                 if (spliceChild(this.isNode ? this.node.children : this.nodes, childId)) {
                     this.updateValue(null);
                 }
-
             },
 
             /**
@@ -367,6 +390,7 @@
              * Save node
              */
             saveNode () {
+                this.$emit(this.events.NODE_BEFORE_SAVE, this.$refs.nameInput.value);
                 if (typeof this.saveUrl == 'string' && this.saveUrl) {
                     this.isLoading = true;
                     let self = this;
@@ -386,11 +410,13 @@
                             self.node.name = self.$refs.nameInput.value;
                             self.isLoading = false;
                             self.isEditing = false;
+                            self.$emit(self.events.NODE_AFTER_SAVE, self.node, response);
                         }
                     );
                 } else {
                     this.node.name = this.$refs.nameInput.value;
                     this.isEditing = false;
+                    this.$emit(this.events.NODE_AFTER_SAVE, this.node);
                 }
             }
         },
