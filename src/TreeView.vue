@@ -272,7 +272,7 @@
                 }
                 // If we open new, yet not loaded node and can use ajax callback to load it
                 if (!this.isOpen && this.canLoadChildren) {
-                    this.$emit(this.events.NODES_BEFORE_LOAD, self.node.id);
+                    this.$emit(this.events.NODES_BEFORE_LOAD, this.node.id);
                     this.isLoading = true;
                     let self = this;
                     Http.ajaxAction(self.nodesUrl, {id: self.node.id}, (response) => {
@@ -444,7 +444,7 @@
         border-radius: 4px;
         box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
         padding: 4px 6px;
-        min-width: 360px;
+        min-width: 420px;
         display: block;
     }
 
