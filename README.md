@@ -3,7 +3,7 @@
 
 Tree VueJS2 component.
 
-[Пример (Example)](http://insbor.ru/vue/tree-view/ "Component example")
+[Пример (Example)](http://insbor.ru/vue/tree-view/index.html "Component example")
 
 ![Пример (example)](https://raw.githubusercontent.com/va-fursenko/tree-view/master/example/tree-view-example.png "Пример (example)")
 
