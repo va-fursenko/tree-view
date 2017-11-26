@@ -28,18 +28,22 @@ export const Http = {
             request.ontimeout = params.fail;
         }
 
-        request.onload = function () {
+        request.onload = () => {
             // Fail handler
             if ([200, 201, 202].indexOf(request.status) == -1) {
                 if (typeof params.fail == 'function') {
                     params.fail(request);
                 }
+
                 return;
             }
-
             // Success handler
             if (typeof params.done == 'function') {
                 params.done(JSON.parse(request.responseText));
+            }
+            // Always callback
+            if (typeof params.always == 'function') {
+                params.always();
             }
         };
 
@@ -49,29 +53,32 @@ export const Http = {
     /**
      * Execute ajax action
      *
-     * @param {String} url
      * @param {Object} params
-     * @param {Function} onLoad
      */
-    ajaxAction (url, params, onLoad)
-    {
+    ajaxAction (params) {
         let data = {};
-        Object.assign(data, params);
+        Object.assign(data, typeof params.data == 'object' ? params.data : {});
         data._token = App.csrf();
         let self = this;
         this.ajax({
-            url: App.url(url),
+            url: App.url(params.url),
             data: data,
             done (response) {
                 if (response.success) {
-                    onLoad(response);
+                    if (typeof params.done == 'function') {
+                        params.done(response);
+                    }
                 } else {
                     self.parseErrorResponse(response);
                 }
             },
             fail (responseObject) {
                 self.parseError(responseObject);
-            }
+                if (typeof params.fail == 'function') {
+                    params.fail(responseObject);
+                }
+            },
+            always: params.always
         });
     },
 
@@ -80,8 +87,7 @@ export const Http = {
      *
      * @param {Object} response
      */
-    parseErrorResponse (response)
-    {
+    parseErrorResponse (response) {
         alert("Error occurred: '" + (response.error ? response.error : '') + "'");
     },
 
@@ -90,8 +96,7 @@ export const Http = {
      *
      * @param {Object} responseObject
      */
-    parseError (responseObject)
-    {
+    parseError (responseObject) {
         alert("Error occurred!");
         console.log('Request failed', responseObject);
     },
@@ -106,18 +111,19 @@ export const Http = {
         let getVar,
             result = {},
             arrayGet = window.location.search.substring(1).split("&");
-
         for (let i = 0; i < arrayGet.length; i++) {
             getVar = arrayGet[i].split("=");
             if (getVar == '') {
+
                 continue;
             }
             if (field && getVar[0] == field) {
+
                 return getVar[1];
             }
             result[getVar[0]] = typeof(getVar[1]) == "undefined" ? "" : getVar[1];
         }
+
         return result;
     }
 };
-

@@ -53,7 +53,7 @@ elixir(function(mix) {
     // Copy fonts
     mix.copy(
         [
-            npmPath + '/font-awesome/fonts/**'
+            npmPath + '/font-awesome/fonts/*.*'
         ],
         assetsPath + '/fonts'
     );

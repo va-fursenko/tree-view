@@ -3,47 +3,58 @@
 
         <template v-if="isRoot">
             <i
-                class="fa fa-plus"
-                v-if="!readonly"
-                @click="addChildNode()"
-                title="Add root node"
+                    class="fa fa-plus"
+                    v-if="!readonly"
+                    @click="addChildNode()"
+                    title="Add root node"
             > </i>
 
-            <tree-view
-                v-for="node in nodes"
-                :key="node.id"
-                :node="node"
-                :nodes-url="nodesUrl"
-                :readonly="readonly"
-                v-model="selectedId"
-            > </tree-view>
+            <div
+                    is="tree-view"
+                    v-for="node in nodes"
+                    :node="node"
+                    :nodes-url="nodesUrl"
+                    :save-url="saveUrl"
+                    :delete-url="deleteUrl"
+                    :allow-empty="allowEmpty"
+                    :readonly="readonly"
+                    v-model="value"
+            ></div>
         </template>
 
         <template v-else-if="isNode">
             <div class="tree-view__node-name">
                 <i
-                    v-if="childrenExists"
-                    class="fa"
-                    :class="{
+                        v-if="childrenExists"
+                        class="fa"
+                        :class="{
                         'fa-angle-up': isOpen && !isLoading,
                         'fa-angle-down': !isOpen || isLoading
                     }"
-                    :title="(isOpen ? 'Hide' : 'Show') + ' child nodes'"
-                    @click="selectNode(true)"
+                        :title="(isOpen ? 'Hide' : 'Show') + ' child nodes'"
+                        @click="selectNode(true)"
                 > </i>
 
-                <template v-if="!isEditing">
+                <div v-if="isEditing" class="tree-view__node-edit">
+                    <input
+                            v-model="node.newName"
+                            class="tree-view__name-edit-input"
+                            ref="nameInput"
+                            @keydown.enter="saveNode()"
+                            @keyup.esc="editNode(false)"
+                    >
+                    <i class="fa fa-check" @click="saveNode()" title="Save node"> </i>
+                    <i class="fa fa-times" @click="editNode(false)" title="Cancel node edit"> </i>
+                </div>
+
+                <template v-else>
                     <span
-                        class="tree-view__node-name"
-                        :class="{'tree-view__bold': isSelected}"
-                        @click="selectNode()"
+                            class="tree-view__node-name"
+                            :class="{'tree-view__bold': isSelected}"
+                            @click="selectNode()"
                     >
                         {{ node.name }}
                     </span>
-                    <i
-                        class="fa fa-spinner fa-pulse fa-fw"
-                        v-if="childrenExists && isLoading"
-                    > </i>
                     <div v-if="!readonly && isSelected && !isLoading" class="tree-view__node-edit tree-view__hide">
                         <i class="fa fa-pencil-square-o" @click="editNode()" title="Edit node"> </i>
                         <i class="fa fa-plus" v-if="!isNew" @click="addChildNode()" title="Add child node"> </i>
@@ -51,48 +62,42 @@
                     </div>
                 </template>
 
-                <div v-else-if="!readonly" class="tree-view__node-edit">
-                    <input
-                        class="tree-view__name-edit-input"
-                        :value="node.name"
-                        ref="nameInput"
-                        @keydown.enter="saveNode()"
-                        @keyup.esc="editNode(false)"
-                    >
-                    <i class="fa fa-check" @click="saveNode()" title="Save node"> </i>
-                    <i class="fa fa-times" @click="editNode(false)" title="Cancel node edit"> </i>
-                </div>
+                <i v-if="isLoading" class="fa fa-spinner fa-pulse fa-fw"> </i>
             </div>
 
             <div v-show="isOpen" v-if="hasChildren">
-                <tree-view
-                    v-for="child in node.children"
-                    :key="node.id"
-                    :node="child"
-                    :nodes-url="nodesUrl"
-                    :readonly="readonly"
-                    v-model="selectedId"
-                    ref="children"
-                > </tree-view>
+                <div
+                        is="tree-view"
+                        v-for="child in node.children"
+                        :node="child"
+                        :nodes-url="nodesUrl"
+                        :save-url="saveUrl"
+                        :delete-url="deleteUrl"
+                        :allow-empty="allowEmpty"
+                        :readonly="readonly"
+                        v-model="value"
+                        ref="children"
+                ></div>
             </div>
         </template>
 
     </div>
 </template>
 
-<script lang="babel">
+<script>
     import { Http } from './common/http';
 
     /**
      * New empty node model
      *
-     * @return {{id: number, name: string, children: Array}}
+     * @return {{id: number, newName: string, children: Array, isNew: Boolean}}
      */
     let newNode = () => {
         return {
-                  id: -(Math.floor(Math.random() * 899999) + 100000),
-                name: 'New item',
-            children: []
+            id: -(Math.floor(Math.random() * 899999) + 100000),
+            newName: 'New item',
+            children: [],
+            isNew: true
         }
     };
 
@@ -115,6 +120,11 @@
             value: {
                 default: null,
                 twoWay: true
+            },
+            // Flag, allows empty value
+            allowEmpty: {
+                type: Boolean,
+                default: false
             },
             // Readonly flag
             readonly: {
@@ -143,9 +153,8 @@
             return {
                 // Inner properties
                 isOpen: false,
-                isLoading: null,
-                isEditing: false,
-                selectedId: this.value
+                isLoading: false,
+                isEdit: false
             }
         },
 
@@ -175,11 +184,7 @@
              * @return {Boolean}
              */
             isSelected () {
-                let result = this.isNode && this.selectedId == this.node.id;
-                if (!result && this.isEditing) {
-                    this.isEditing = false;
-                }
-                return result;
+                return this.isNode && this.value == this.node.id;
             },
 
             /**
@@ -201,6 +206,20 @@
             },
 
             /**
+             * Check, whether component is a new created node
+             *
+             * @returns {Boolean}
+             */
+            isNew () {
+                return Boolean(
+                    !this.isRoot
+                    && typeof this.node == 'object'
+                    && typeof this.node.isNew != 'undefined'
+                    && this.node.isNew
+                );
+            },
+
+            /**
              * Check, whether item has children
              *
              * @returns {Boolean}
@@ -208,12 +227,15 @@
             childrenExists () {
                 // Bad model
                 if (!this.node) {
+
                     return false;
                 }
                 // Child nodes has not loaded yet, but available
                 if (this.canLoadChildren) {
+
                     return true;
                 }
+
                 // Children nodes already or not
                 return this.hasChildren;
             },
@@ -236,18 +258,24 @@
              */
             canLoadChildren () {
                 return Boolean(
-                    this.node && this.node.children > 0
+                    this.node
+                    && Number.isInteger(this.node.children) && this.node.children > 0
                     && typeof this.nodesUrl == 'string' && this.nodesUrl
                 );
             },
 
             /**
-             * New, yet not saved node flag
-             *
-             * @return {Boolean}
+             * Node edit flag
              */
-            isNew () {
-                return this.node && this.node.id < 0;
+            isEditing () {
+                // New nodes creates opened for edit
+                if (this.isNew && this.isSelected) {
+                    this.isEdit = true;
+                } else if (!this.isSelected) {
+                    this.isEdit = false;
+                }
+
+                return this.isEdit;
             }
         },
 
@@ -272,13 +300,19 @@
                 }
                 // If we open new, yet not loaded node and can use ajax callback to load it
                 if (!this.isOpen && this.canLoadChildren) {
-                    this.$emit(this.events.NODES_BEFORE_LOAD, this.node.id);
                     this.isLoading = true;
-                    let self = this;
-                    Http.ajaxAction(self.nodesUrl, {id: self.node.id}, (response) => {
-                        self.setChildren(response.data);
-                        self.isLoading = false;
-                        self.$emit(self.events.NODES_AFTER_LOAD, self.node.id, response.data);
+                    let self = this,
+                        data = {
+                            id: this.node.id
+                        };
+                    Http.ajaxAction({
+                        url: this.nodesUrl,
+                        data: data,
+                        done: (response) => {
+                            self.setChildren(response.data);
+                            self.isLoading = false;
+                            self.$emit(self.events.NODES_AFTER_LOAD, self.node.id, response.data);
+                        }
                     });
                 }
                 // Don't close node if click was with force toggle parameter (Click on name, not chevron)
@@ -302,35 +336,32 @@
             /**
              * Set value to this.node.id and call this method in parent component
              *
-             * @param {Number|Boolean|String} newValue
+             * @param {Number|Boolean|String} value
              */
-            updateValue (newValue = null) {
-                this.selectedId = arguments.length || !this.node ? newValue : this.node.id;
+            updateValue (value = null) {
+                this.value = arguments.length || !this.node ? value : this.node.id;
                 // If parent is TreeView node or root, set value to it
                 if (this.$parent && (this.$parent.isNode || this.$parent.isRoot) && typeof this.$parent.updateValue === 'function') {
-                    this.$parent.updateValue(this.selectedId);
+                    this.$parent.updateValue(this.value);
                 }
-                this.$emit('input', this.selectedId);
+                this.$emit('input', this.value);
             },
 
             /**
              * Start new child node creation to selected
              */
             addChildNode () {
+                if (this.isNode && !Array.isArray(this.node.children)) {
+                    this.node.children = [];
+                }
                 let node = newNode();
                 if (this.isNode) {
-                    if (!Array.isArray(this.node.children)) {
-                        this.node.children = [];
-                    }
                     this.node.children.push(node);
                 } else {
-                    if (!Array.isArray(this.nodes)) {
-                        this.nodes = [];
-                    }
-                    this.nodes.push(node);
+                    this.nodes.push(node)
                 }
-                this.$emit(this.events.NODE_ADD, node);
                 this.isOpen = true;
+                this.updateValue(node.id);
             },
 
             /**
@@ -338,21 +369,32 @@
              */
             deleteNode () {
                 if (!confirm("Really delete node and all it's children?") || !this.isNode) {
+
                     return false;
                 }
-                this.$emit(this.events.NODE_BEFORE_DELETE, this.node.id);
 
-                if (typeof this.deleteUrl == 'string' && this.deleteUrl) {
-                    this.isLoading = true;
-                    let self = this;
-                    Http.ajaxAction(self.deleteUrl, {id: self.node.id}, (response) => {
-                        self.$parent.deleteChildNode(self.node.id);
-                        self.isLoading = false;
-                        self.$emit(self.events.NODE_AFTER_DELETE, self.node.id, response);
-                    });
-                } else {
+                if (typeof this.deleteUrl != 'string' || !this.deleteUrl || this.isNew) {
                     this.$parent.deleteChildNode(this.node.id);
+
+                    return true;
                 }
+
+                this.isLoading = true;
+                let self = this;
+                Http.ajaxAction({
+                    url: this.deleteUrl,
+                    data: {
+                        id: this.node.id
+                    },
+                    done: (response) => {
+                        self.$parent.deleteChildNode(self.node.id);
+                        self.$emit(self.events.NODE_AFTER_DELETE, self.node.id, response);
+                    },
+                    always: () => {
+                        self.isLoading = false;
+                    }
+                });
+
             },
 
             /**
@@ -364,14 +406,14 @@
                 let spliceChild = (nodes, spliceId) => {
                     for (let i in nodes) {
                         if (nodes.hasOwnProperty(i) && spliceId == nodes[i].id) {
-                            this.$emit(this.events.NODE_DELETE, nodes[i]);
                             nodes.splice(i, 1);
+
                             return true;
                         }
                     }
+
                     return false;
                 };
-
                 if (spliceChild(this.isNode ? this.node.children : this.nodes, childId)) {
                     this.updateValue(null);
                 }
@@ -383,48 +425,51 @@
              * @param {Boolean} isEdit
              */
             editNode (isEdit = true) {
-                this.isEditing = isEdit;
+                this.isEdit = isEdit;
+                if (this.isEdit) {
+                    this.node.newName = this.node.name;
+                }
+                if (!this.isEdit && this.isNew) {
+
+                    this.$parent.deleteChildNode(this.node.id);
+                }
             },
 
             /**
              * Save node
              */
             saveNode () {
-                this.$emit(this.events.NODE_BEFORE_SAVE, this.$refs.nameInput.value);
-                if (typeof this.saveUrl == 'string' && this.saveUrl) {
-                    this.isLoading = true;
-                    let self = this;
-                    Http.ajaxAction(
-                        self.saveUrl,
-                        {
-                            id: self.node.id,
-                            name: self.node.name,
-                            parent_id: self.isRoot || !self.$parent.node
-                                ? 0
-                                : self.$parent.node.id
-                        },
-                        (response) => {
-                            if (self.node.id < 0 && response.data.id) {
-                                self.node.id = response.data.id;
-                            }
-                            self.node.name = self.$refs.nameInput.value;
-                            self.isLoading = false;
-                            self.isEditing = false;
-                            self.$emit(self.events.NODE_AFTER_SAVE, self.node, response);
-                        }
-                    );
-                } else {
-                    this.node.name = this.$refs.nameInput.value;
-                    this.isEditing = false;
-                    this.$emit(this.events.NODE_AFTER_SAVE, this.node);
-                }
-            }
-        },
+                let self = this,
+                    finishEdit = () => {
+                        self.node.name = self.node.newName;
+                        delete self.node.newName;
+                        self.node.isNew = false;
+                        self.isEdit = false;
+                        self.isLoading = false;
+                    };
+                if (typeof this.saveUrl != 'string' || !this.saveUrl) {
+                    finishEdit();
 
-        // Fields watches
-        watch: {
-            value (newValue) {
-                this.selectedId = newValue;
+                    return true;
+                }
+                this.isLoading = true;
+                Http.ajaxAction({
+                    url: this.saveUrl,
+                    data: {
+                        id: this.node.id,
+                        name: this.node.newName,
+                        parentId: this.isRoot || !this.$parent.node
+                            ? 0
+                            : this.$parent.node.id
+                    },
+                    done: (response) => {
+                        if (self.node.id < 0 && response.data.id) {
+                            self.node.id = response.data.id;
+                        }
+                        self.$emit(self.events.NODE_AFTER_SAVE, self.node, response);
+                    },
+                    always: finishEdit
+                });
             }
         },
 
@@ -444,7 +489,7 @@
         border-radius: 4px;
         box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
         padding: 4px 6px;
-        min-width: 420px;
+        min-width: 480px;
         display: block;
     }
 
@@ -475,7 +520,10 @@
 
     /* Selected tree view value */
     span.tree-view__node-name {
-        margin-left: 15px;
+        color: #555;
+        font-size: 14px;
+        text-decoration: none;
+        margin-left: 14px;
         cursor: pointer;
     }
     span.tree-view__node-name.tree-view__bold {
@@ -507,6 +555,9 @@
         display: inline;
         height: 26px;
         padding: 2px 6px;
+        font-family: inherit;
+        font-size: 14px;
+        color: #555;
         background-color: #fff;
         background-image: none;
         border: 1px solid #ccc;
@@ -516,14 +567,5 @@
         -webkit-transition: border-color ease-in-out .15s, -webkit-box-shadow ease-in-out .15s;
         -o-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
         transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
-    }
-
-    /* Text style */
-    span.tree-view__node-name,
-    input.tree-view__name-edit-input {
-        color: #555;
-        font-size: 14px;
-        font-family: inherit;
-        text-decoration: none;
     }
 </style>
